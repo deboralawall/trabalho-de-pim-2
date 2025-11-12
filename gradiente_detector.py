@@ -28,10 +28,9 @@ def gradient_magnitude_direction(Gx, Gy):
     return M, D
 
 # ============================================================
-# 3. Supressão não-máxima simplificada (mantém só máximos locais)
+# 3. Supressão não-máxima simplificada
 # ============================================================
 def non_max_suppression(M):
-    # Normaliza e mantém bordas fortes
     M_suppressed = (M / M.max()) * 255
     return M_suppressed.astype(np.uint8)
 
@@ -93,29 +92,49 @@ def main():
         print(f"\nProcessando imagem: {nome}")
         img = cv2.imread(nome, cv2.IMREAD_GRAYSCALE)
         if img is None:
-            print(f"Imagem {nome} não encontrada.")
+            print(f"⚠️  Imagem {nome} não encontrada. Pulei.")
             continue
 
         grad_sobel = aplicar_operador(img, "sobel")
         grad_prewitt = aplicar_operador(img, "prewitt")
 
+        # Resultados com skimage
         sobel_cv = filters.sobel(img)
         prewitt_cv = filters.prewitt(img)
 
+        # Comparação SSIM
         s_sobel = ssim(grad_sobel / 255.0, sobel_cv, data_range=1.0)
         s_prewitt = ssim(grad_prewitt / 255.0, prewitt_cv, data_range=1.0)
 
         print(f"SSIM Sobel: {s_sobel:.4f}")
         print(f"SSIM Prewitt: {s_prewitt:.4f}")
 
-        fig, axs = plt.subplots(2, 2, figsize=(10, 8))
-        axs[0, 0].imshow(grad_sobel, cmap='gray'); axs[0, 0].set_title('Sobel Manual')
-        axs[0, 1].imshow(grad_prewitt, cmap='gray'); axs[0, 1].set_title('Prewitt Manual')
-        axs[1, 0].imshow(sobel_cv, cmap='gray'); axs[1, 0].set_title('Sobel (skimage)')
-        axs[1, 1].imshow(prewitt_cv, cmap='gray'); axs[1, 1].set_title('Prewitt (skimage)')
-        for ax in axs.ravel(): ax.axis('off')
+        # ====================================================
+        # Exibição e salvamento das figuras
+        # ====================================================
+        fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+
+        axs[0, 0].imshow(img, cmap='gray')
+        axs[0, 0].set_title('Imagem Original')
+
+        axs[0, 1].imshow(grad_sobel, cmap='gray')
+        axs[0, 1].set_title('Sobel Manual')
+
+        axs[0, 2].imshow(grad_prewitt, cmap='gray')
+        axs[0, 2].set_title('Prewitt Manual')
+
+        axs[1, 1].imshow(sobel_cv, cmap='gray')
+        axs[1, 1].set_title('Sobel (skimage)')
+
+        axs[1, 2].imshow(prewitt_cv, cmap='gray')
+        axs[1, 2].set_title('Prewitt (skimage)')
+
+        for ax in axs.ravel():
+            ax.axis('off')
+
         plt.suptitle(f"Comparativo {nome}")
         plt.tight_layout()
+        plt.savefig(f"comparativo_{nome}.png", bbox_inches='tight')
         plt.show()
 
 if __name__ == "__main__":
